@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Gen CRM</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <h1>🎯 Lead Gen CRM</h1>
+        <span>Base Model v1.0</span>
+    </div>
+
+    <div class="main-content">
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <h3 id="totalLeads">0</h3>
+                <p>Total Leads</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="newLeads">0</h3>
+                <p>New Leads</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="contactedLeads">0</h3>
+                <p>Contacted</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="convertedLeads">0</h3>
+                <p>Converted</p>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <h2 class="charts-title">📊 ML Dashboard</h2>
+            <div class="charts-grid">
+
+                <div class="chart-card">
+                    <h3>Lead Status</h3>
+                    <canvas id="statusChart"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Lead Category</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Churn Risk</h3>
+                    <canvas id="churnChart"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Lead Priority</h3>
+                    <canvas id="priorityChart"></canvas>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Message -->
+        <div class="message" id="message"></div>
+
+        <!-- Add Lead Form -->
+        <div class="form-container">
+            <h2>Add New Lead</h2>
+            <div class="form-row">
+                <input type="text" id="name" placeholder="Full Name" />
+                <input type="email" id="email" placeholder="Email Address" />
+                <input type="text" id="phone" placeholder="Phone Number" />
+            </div>
+            <button id="addLeadBtn" class="add-btn">+ Add Lead</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="🔍 Search by name, email, category or priority" oninput="searchLeads()" />
+        </div>
+
+        <!-- Leads Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <h2>All Leads</h2>
+                <button id="refreshBtn" class="refresh-btn">🔄 Refresh</button>
+            </div>
+            <table id="leadsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th>Follow Up</th>
+                        <th>Category</th>
+                        <th>Lead Score</th>
+                        <th>Churn Risk</th>
+                        <th>Priority</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsBody"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- Edit Lead Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2>✏️ Edit Lead</h2>
+            <input type="hidden" id="editId" />
+            <div class="modal-row">
+                <input type="text" id="editName" placeholder="Full Name" />
+                <input type="email" id="editEmail" placeholder="Email Address" />
+            </div>
+            <div class="modal-row">
+                <input type="text" id="editPhone" placeholder="Phone Number" />
+                <input type="date" id="editFollowUp" />
+            </div>
+            <textarea id="editNotes" placeholder="Add notes here..."></textarea>
+            <div class="modal-buttons">
+                <button id="cancelBtn" class="cancel-btn">Cancel</button>
+                <button id="saveBtn" class="save-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        document.getElementById('addLeadBtn').addEventListener('click', addLead);
+        document.getElementById('searchInput').addEventListener('input', searchLeads);
+        document.getElementById('refreshBtn').addEventListener('click', viewLeads);
+        document.getElementById('cancelBtn').addEventListener('click', closeModal);
+        document.getElementById('saveBtn').addEventListener('click', saveLead);
+    </script>
+
+</body>
+</html>

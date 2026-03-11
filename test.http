@@ -1,0 +1,105 @@
+### Add Lead
+POST http://127.0.0.1:5000/add-lead
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "1234567890"
+}
+
+### Add Lead
+POST http://127.0.0.1:5000/add-lead
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "email": "alice@example.com",
+  "phone": "9876543210"
+}
+
+
+### View Leads
+GET http://127.0.0.1:5000/view-leads
+
+### Update Lead
+PUT http://127.0.0.1:5000/update-lead/1
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "1234567890",
+  "status": "Contacted",
+  "notes": "Interested in product",
+  "follow_up_date": "2026-03-15"
+}
+
+### Delete Lead
+DELETE http://127.0.0.1:5000/delete-lead/1
+
+### Test Validation
+POST http://127.0.0.1:5000/add-lead
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "invalidemail",
+  "phone": "123"
+}
+
+### Test 1 - Empty fields
+POST http://127.0.0.1:5000/add-lead
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "",
+  "phone": ""
+}
+
+###  Test 2 - Duplicate email
+POST http://127.0.0.1:5000/add-lead
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "email": "alice@example.com",
+  "phone": "9876543210"
+}
+
+### Test 3 - Valid new lead
+POST http://127.0.0.1:5000/add-lead
+Content-Type: application/json
+
+{
+  "name": "John Smith",
+  "email": "john@example.com",
+  "phone": "9876543211"
+}
+
+### Test 5 - Search by name
+GET http://127.0.0.1:5000/search-leads?q=Alice
+
+### Test 6 - Filter by status
+GET http://127.0.0.1:5000/search-leads?status=New
+
+###
+POST http://localhost:5000/run-segmentation
+Content-Type: application/json
+
+###
+POST http://127.0.0.1:5000/run-lead-scoring
+Content-Type: application/json
+
+###
+POST http://127.0.0.1:5000/run-lead-scoring
+Content-Type: application/json
+
+###
+POST http://127.0.0.1:5000/run-segmentation
+Content-Type: application/json
+
+###
+POST http://127.0.0.1:5000/run-churn-prediction
+Content-Type: application/json
