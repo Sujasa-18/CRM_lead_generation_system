@@ -419,3 +419,7 @@ textarea:focus {
 .chart-card canvas {
     max-height: 220px;
 }
+
+.chart-card-wide {
+    grid-column: span 2;
+}

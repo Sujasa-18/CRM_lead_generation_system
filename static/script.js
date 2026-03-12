@@ -70,9 +70,10 @@ let statusChartInstance = null;
 let categoryChartInstance = null;
 let churnChartInstance = null;
 let priorityChartInstance = null;
+let featureChartInstance = null;
 
 // --- Render Charts ---
-function renderCharts(leads) {
+async function renderCharts(leads) { 
 
     // ── 1. Lead Status Pie Chart ───────────────────────────────────
     const statusCounts = {
@@ -172,6 +173,29 @@ function renderCharts(leads) {
             responsive: true,
             plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // ── 5. Feature Importance Chart ───────────────────────────────
+    const fiResponse = await fetch(`${API}/feature-importance`);
+    const fiData = await fiResponse.json();
+
+    if (featureChartInstance) featureChartInstance.destroy();
+    featureChartInstance = new Chart(document.getElementById("featureChart"), {
+        type: "bar",
+        data: {
+            labels: fiData.features,
+            datasets: [{
+                label: "Importance",
+                data: fiData.importance,
+                backgroundColor: "#2E75B6"
+            }]
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }
         }
     });
 }

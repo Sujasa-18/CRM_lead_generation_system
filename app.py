@@ -127,7 +127,7 @@ def view_leads():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("SELECT * FROM leads ORDER BY id DESC LIMIT 400")
+        cursor.execute("SELECT * FROM leads ORDER BY id DESC LIMIT 1000")
         leads = cursor.fetchall()
 
         cursor.close()
@@ -227,6 +227,23 @@ def run_priority_scoring_route():
         from priority_score import run_priority_scoring
         run_priority_scoring()
         return jsonify({"message": "Priority scoring complete!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- Feature Importance ---
+@app.route("/feature-importance", methods=["GET"])
+def feature_importance():
+    try:
+        import joblib
+        model = joblib.load("lead_scoring_model.pkl")
+        features = [
+            "TotalVisits", "Time Spent", "Page Views",
+            "Activity Score", "Profile Score",
+            "Do Not Email", "Do Not Call", "Search", "Magazine",
+            "Newspaper", "Digital Ad", "Recommendations"
+        ]
+        importance = model.feature_importances_.tolist()
+        return jsonify({"features": features, "importance": importance}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
