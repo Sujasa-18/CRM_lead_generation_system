@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 import mysql.connector
 import os
@@ -244,6 +244,16 @@ def feature_importance():
         ]
         importance = model.feature_importances_.tolist()
         return jsonify({"features": features, "importance": importance}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+# --- Generate PDF Report ---
+@app.route("/generate-report", methods=["GET"])
+def generate_report_route():
+    try:
+        from report_generator import generate_report
+        path = generate_report("crm_report.pdf")
+        return send_file(path, as_attachment=True, download_name="CRM_Report.pdf")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     

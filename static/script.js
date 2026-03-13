@@ -379,5 +379,10 @@ async function runLeadScoring() {
     }
 }
 
+// --- Generate Report ---
+function generateReport() {
+    window.open(`${API}/generate-report`, '_blank');
+}
+
 // --- Initialize page ---
 viewLeads();
