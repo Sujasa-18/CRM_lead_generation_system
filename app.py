@@ -20,6 +20,21 @@ def get_db_connection():
     )
     return connection
 
+# --- Log Activity ---
+def log_activity(lead_id, action):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO lead_activity (lead_id, action) VALUES (%s, %s)",
+            (lead_id, action)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Activity log error: {e}")
+
 
 # --- Home Page ---
 @app.route("/")
@@ -37,7 +52,6 @@ def add_lead():
         email = data.get("email")
         phone = data.get("phone")
 
-        # Validation
         if not name or not email or not phone:
             return jsonify({"message": "Name, email, and phone are required!"}), 400
 
@@ -50,22 +64,20 @@ def add_lead():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # Duplicate email check
         cursor.execute("SELECT * FROM leads WHERE email=%s", (email,))
         if cursor.fetchone():
             cursor.close()
             conn.close()
             return jsonify({"message": "Lead with this email already exists!"}), 400
 
-        # Insert lead
         cursor.execute(
             "INSERT INTO leads (name, email, phone) VALUES (%s, %s, %s)",
             (name, email, phone)
         )
 
         conn.commit()
+        log_activity(cursor.lastrowid, "Lead created")
 
-        # Run ML segmentation after new lead
         run_segmentation()
 
         cursor.close()
@@ -111,6 +123,12 @@ def update_lead(lead_id):
         )
 
         conn.commit()
+
+        if data.get("status"):
+            log_activity(lead_id, f"Status updated to {data.get('status')}")
+        else:
+            log_activity(lead_id, "Lead details updated")
+
         cursor.close()
         conn.close()
 
@@ -124,15 +142,36 @@ def update_lead(lead_id):
 @app.route("/view-leads", methods=["GET"])
 def view_leads():
     try:
+        status = request.args.get("status", "")
+        category = request.args.get("category", "")
+        churn = request.args.get("churn", "")
+        priority = request.args.get("priority", "")
+
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("SELECT * FROM leads ORDER BY id DESC LIMIT 1000")
-        leads = cursor.fetchall()
+        query = "SELECT * FROM leads WHERE 1=1"
+        params = []
 
+        if status:
+            query += " AND status = %s"
+            params.append(status)
+        if category:
+            query += " AND lead_category = %s"
+            params.append(category)
+        if churn:
+            query += " AND churn_risk = %s"
+            params.append(churn)
+        if priority:
+            query += " AND priority LIKE %s"
+            params.append(f"%{priority}%")
+
+        query += " ORDER BY id DESC LIMIT 1000"
+        cursor.execute(query, params)
+
+        leads = cursor.fetchall()
         cursor.close()
         conn.close()
-
         return jsonify({"leads": leads}), 200
 
     except Exception as e:
@@ -146,6 +185,7 @@ def delete_lead(lead_id):
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        log_activity(lead_id, "Lead deleted")
         cursor.execute("DELETE FROM leads WHERE id=%s", (lead_id,))
         conn.commit()
 
@@ -158,6 +198,7 @@ def delete_lead(lead_id):
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
+# --- Search Leads ---
 @app.route("/search-leads", methods=["GET"])
 def search_leads():
     try:
@@ -191,6 +232,24 @@ def search_leads():
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
+# --- Get Lead Activity ---
+@app.route("/lead-activity/<int:lead_id>", methods=["GET"])
+def get_lead_activity(lead_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM lead_activity WHERE lead_id = %s ORDER BY timestamp DESC",
+            (lead_id,)
+        )
+        activity = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({"activity": activity}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # --- Run ML Segmentation Manually ---
 @app.route("/run-segmentation", methods=["POST"])
 def run_ml():
@@ -199,7 +258,7 @@ def run_ml():
         return jsonify({"message": "Segmentation complete!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 # --- Run Lead Scoring ---
 @app.route("/run-lead-scoring", methods=["POST"])
 def run_lead_scoring_route():
@@ -246,7 +305,7 @@ def feature_importance():
         return jsonify({"features": features, "importance": importance}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 # --- Generate PDF Report ---
 @app.route("/generate-report", methods=["GET"])
 def generate_report_route():
@@ -256,6 +315,6 @@ def generate_report_route():
         return send_file(path, as_attachment=True, download_name="CRM_Report.pdf")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 if __name__ == "__main__":
     app.run(debug=True)

@@ -230,6 +230,7 @@ function renderTable(leads) {
             <td>
                 <button class="edit-btn">✏️ Edit</button>
                 <button class="delete-btn">🗑 Delete</button>
+                <button class="activity-btn">📋 Activity</button>
             </td>
         `;
 
@@ -237,6 +238,8 @@ function renderTable(leads) {
         row.querySelector(".status-dropdown").addEventListener("change", (e) => updateStatus(lead.id, e.target.value));
         row.querySelector(".edit-btn").addEventListener("click", () => openModal(lead));
         row.querySelector(".delete-btn").addEventListener("click", () => deleteLead(lead.id));
+        row.querySelector(".activity-btn").addEventListener("click", () => openActivityModal(lead.id));
+        
 
         tbody.appendChild(row);
     });
@@ -382,6 +385,57 @@ async function runLeadScoring() {
 // --- Generate Report ---
 function generateReport() {
     window.open(`${API}/generate-report`, '_blank');
+}
+// --- Filter Leads ---
+async function filterLeads() {
+    const status = document.getElementById("statusFilter").value;
+    const category = document.getElementById("categoryFilter").value;
+    const churn = document.getElementById("churnFilter").value;
+    const priority = document.getElementById("priorityFilter").value;
+
+    let url = `${API}/view-leads?status=${status}&category=${category}&churn=${churn}&priority=${priority}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        renderTable(data.leads);
+    } catch (err) {
+        showMessage("Filter failed!", "error");
+        console.error(err);
+    }
+}
+
+// --- Open Activity Modal ---
+async function openActivityModal(leadId) {
+    try {
+        const response = await fetch(`${API}/lead-activity/${leadId}`);
+        const data = await response.json();
+
+        const list = document.getElementById("activityList");
+        list.innerHTML = "";
+
+        if (data.activity.length === 0) {
+            list.innerHTML = "<p>No activity recorded yet.</p>";
+        } else {
+            data.activity.forEach(item => {
+                list.innerHTML += `
+                    <div style="padding: 10px; border-left: 3px solid #2E75B6; margin-bottom: 10px;">
+                        <p style="margin:0; font-weight:bold">${item.action}</p>
+                        <p style="margin:0; font-size:12px; color:#888">${item.timestamp}</p>
+                    </div>
+                `;
+            });
+        }
+
+        document.getElementById("activityOverlay").classList.add("active");
+    } catch (err) {
+        showMessage("Failed to load activity!", "error");
+    }
+}
+
+// --- Close Activity Modal ---
+function closeActivityModal() {
+    document.getElementById("activityOverlay").classList.remove("active");
 }
 
 // --- Initialize page ---

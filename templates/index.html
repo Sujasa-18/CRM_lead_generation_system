@@ -84,9 +84,36 @@
             <button id="addLeadBtn" class="add-btn">+ Add Lead</button>
         </div>
 
-        <!-- Search Bar -->
+        <!-- Search and Filter Bar -->
         <div class="search-container">
             <input type="text" id="searchInput" placeholder="🔍 Search by name, email, category or priority" oninput="searchLeads()" />
+            <select id="statusFilter" onchange="filterLeads()">
+                <option value="">All Status</option>
+                <option value="New">New</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Converted">Converted</option>
+                <option value="Lost">Lost</option>
+            </select>
+            <select id="categoryFilter" onchange="filterLeads()">
+                <option value="">All Categories</option>
+                <option value="Hot">Hot</option>
+                <option value="Warm">Warm</option>
+                <option value="Cold">Cold</option>
+            </select>
+            <select id="churnFilter" onchange="filterLeads()">
+                <option value="">All Churn Risk</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+            <select id="priorityFilter" onchange="filterLeads()">
+                <option value="">All Priorities</option>
+                <option value="1">Priority 1 - Urgent</option>
+                <option value="2">Priority 2 - Follow Up</option>
+                <option value="3">Priority 3 - Nurture</option>
+                <option value="4">Priority 4 - Monitor</option>
+                <option value="5">Priority 5 - No Action</option>
+            </select>
         </div>
 
         <!-- Leads Table -->
@@ -136,6 +163,17 @@
             <div class="modal-buttons">
                 <button id="cancelBtn" class="cancel-btn">Cancel</button>
                 <button id="saveBtn" class="save-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Modal -->
+    <div class="modal-overlay" id="activityOverlay">
+        <div class="modal">
+            <h2>📋 Lead Activity Timeline</h2>
+            <div id="activityList"></div>
+            <div class="modal-buttons">
+                <button onclick="closeActivityModal()" class="cancel-btn">Close</button>
             </div>
         </div>
     </div>
