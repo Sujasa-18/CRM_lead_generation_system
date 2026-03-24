@@ -204,6 +204,7 @@ async function renderCharts(leads) {
 function renderTable(leads) {
     const tbody = document.getElementById("leadsBody");
     tbody.innerHTML = "";
+    document.getElementById("filteredCount").textContent = `Showing ${leads.length} lead${leads.length !== 1 ? 's' : ''}`;
 
     leads.forEach(lead => {
         const row = document.createElement("tr");
@@ -386,6 +387,18 @@ async function runLeadScoring() {
 function generateReport() {
     window.open(`${API}/generate-report`, '_blank');
 }
+
+function exportCSV() {
+    const search   = document.getElementById("searchInput").value || "";
+    const status   = document.getElementById("statusFilter").value || "";
+    const category = document.getElementById("categoryFilter").value || "";
+    const churn    = document.getElementById("churnFilter").value || "";
+    const priority = document.getElementById("priorityFilter").value || "";
+
+    const params = new URLSearchParams({ search, status, category, churn, priority });
+    window.location.href = `/export-csv?${params.toString()}`;
+}
+
 // --- Filter Leads ---
 async function filterLeads() {
     const status = document.getElementById("statusFilter").value;

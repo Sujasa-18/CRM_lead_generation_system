@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Lead Gen CRM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 Lead Gen CRM</h1>
+        <span>Base Model v1.0</span>
+    </div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <h2>🔒 Login</h2>
+            <p class="login-subtitle">Enter your password to access the CRM</p>
+
+            {% if error %}
+                <div class="message error" style="display:block">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="/login">
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter password"
+                    class="login-input"
+                    autofocus
+                />
+                <button type="submit" class="login-btn">Login →</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

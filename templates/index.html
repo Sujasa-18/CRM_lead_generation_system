@@ -11,9 +11,12 @@
 
     <!-- Navbar -->
     <div class="navbar">
-        <h1>🎯 Lead Gen CRM</h1>
+    <h1>🎯 Lead Gen CRM</h1>
+    <div style="display:flex; align-items:center; gap:20px;">
         <span>Base Model v1.0</span>
+        <a href="/logout" class="logout-btn">🔓 Logout</a>
     </div>
+</div>
 
     <div class="main-content">
 
@@ -115,13 +118,14 @@
                 <option value="5">Priority 5 - No Action</option>
             </select>
         </div>
-
+<p id="filteredCount" style="margin: 6px 0 0 4px; font-size: 0.875rem; color: #888;"></p>
         <!-- Leads Table -->
         <div class="table-container">
             <div class="table-header">
                 <h2>All Leads</h2>
                 <button id="refreshBtn" class="refresh-btn">🔄 Refresh</button>
                 <button onclick="generateReport()" class="refresh-btn">📄 Generate Report</button>
+                <button onclick="exportCSV()" class="refresh-btn">⬇ Export Filtered Leads (CSV)</button>
             </div>
             <table id="leadsTable">
                 <thead>

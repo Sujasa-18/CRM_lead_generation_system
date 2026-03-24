@@ -1,13 +1,32 @@
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, Response, session, redirect, url_for
 from flask_cors import CORS
+from dotenv import load_dotenv
+from functools import wraps
+import bcrypt
 import mysql.connector
 import os
 
 # ML model
 from ml_model import run_segmentation
 
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
+
+# Hash the CRM password once at startup
+RAW_PASSWORD = os.getenv("CRM_PASSWORD", "admin123")
+HASHED_PASSWORD = bcrypt.hashpw(RAW_PASSWORD.encode('utf-8'), bcrypt.gensalt())
+
+# --- Login Required Decorator ---
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
 
 
 # --- Database Connection ---
@@ -15,7 +34,7 @@ def get_db_connection():
     connection = mysql.connector.connect(
         host=os.getenv("DB_HOST", "localhost"),
         user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", "197672"),
+        password=os.getenv("DB_PASSWORD", ""),
         database=os.getenv("DB_NAME", "crm_leads")
     )
     return connection
@@ -36,8 +55,28 @@ def log_activity(lead_id, action):
         print(f"Activity log error: {e}")
 
 
+# --- Login Page ---
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if bcrypt.checkpw(password.encode('utf-8'), HASHED_PASSWORD):
+            session["logged_in"] = True
+            return redirect(url_for("home"))
+        else:
+            error = "Incorrect password. Please try again."
+    return render_template("login.html", error=error)
+
+# --- Logout ---
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
 # --- Home Page ---
 @app.route("/")
+@login_required
 def home():
     return render_template("index.html")
 
@@ -313,6 +352,90 @@ def generate_report_route():
         from report_generator import generate_report
         path = generate_report("crm_report.pdf")
         return send_file(path, as_attachment=True, download_name="CRM_Report.pdf")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# --- Export Filtered Leads to CSV ---
+@app.route("/export-csv", methods=["GET"])
+def export_csv():
+    try:
+        import csv
+        import io
+
+        status   = request.args.get("status", "")
+        category = request.args.get("category", "")
+        churn    = request.args.get("churn", "")
+        priority = request.args.get("priority", "")
+        search   = request.args.get("search", "")
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = "SELECT * FROM leads WHERE 1=1"
+        params = []
+
+        if search:
+            query += " AND (name LIKE %s OR email LIKE %s)"
+            params.extend([f"%{search}%", f"%{search}%"])
+        if status:
+            query += " AND status = %s"
+            params.append(status)
+        if category:
+            query += " AND lead_category = %s"
+            params.append(category)
+        if churn:
+            query += " AND churn_risk = %s"
+            params.append(churn)
+        if priority:
+            query += " AND priority LIKE %s"
+            params.append(f"%{priority}%")
+
+        query += " ORDER BY id DESC"
+        cursor.execute(query, params)
+        leads = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        # Build CSV in memory
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Header
+        writer.writerow([
+            "ID", "Name", "Email", "Phone",
+            "Status", "Category", "Churn Risk",
+            "Priority", "Lead Score", "Segment", "Notes", "Follow Up Date"
+        ])
+
+        # Rows
+        for lead in leads:
+            writer.writerow([
+                lead.get("id", ""),
+                lead.get("name", ""),
+                lead.get("email", ""),
+                lead.get("phone", ""),
+                lead.get("status", ""),
+                lead.get("lead_category", ""),
+                lead.get("churn_risk", ""),
+                lead.get("priority", ""),
+                lead.get("lead_score", ""),
+                lead.get("segment", ""),
+                lead.get("notes", ""),
+                lead.get("follow_up_date", ""),
+            ])
+
+        output.seek(0)
+
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={
+                "Content-Disposition": "attachment; filename=leads_export.csv",
+                "Content-Type": "text/csv; charset=utf-8"
+            }
+        )
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
