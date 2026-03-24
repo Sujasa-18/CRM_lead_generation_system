@@ -51,6 +51,13 @@ async function viewLeads() {
         renderStats(data.leads);
         renderCharts(data.leads);
         renderTable(data.leads);
+
+        // Run next action in background after leads load
+        fetch(`${API}/run-next-action`, { method: "POST" })
+            .then(() => fetch(`${API}/view-leads`))
+            .then(res => res.json())
+            .then(data => renderTable(data.leads));
+
     } catch (err) {
         showMessage("Failed to load leads!", "error");
         console.error(err);
@@ -228,6 +235,7 @@ function renderTable(leads) {
             <td>${lead.lead_score ? `${lead.lead_score}%` : '—'}</td>
             <td>${lead.churn_risk || '—'}</td>
             <td style="white-space: nowrap">${lead.priority || '—'}</td>
+            <td style="white-space: nowrap">${lead.next_action || '—'}</td>
             <td>
                 <button class="edit-btn">✏️ Edit</button>
                 <button class="delete-btn">🗑 Delete</button>
@@ -399,6 +407,25 @@ function exportCSV() {
     window.location.href = `/export-csv?${params.toString()}`;
 }
 
+// --- Run Next Best Action ---
+async function runNextAction() {
+    try {
+        const response = await fetch(`${API}/run-next-action`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showMessage(data.message, "success");
+            viewLeads();
+        } else {
+            showMessage(data.error, "error");
+        }
+    } catch (err) {
+        showMessage("Next action failed!", "error");
+        console.error(err);
+    }
+}
 // --- Filter Leads ---
 async function filterLeads() {
     const status = document.getElementById("statusFilter").value;

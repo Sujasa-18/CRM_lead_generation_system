@@ -54,6 +54,42 @@ def log_activity(lead_id, action):
     except Exception as e:
         print(f"Activity log error: {e}")
 
+# --- Next Best Action Logic ---
+def get_next_action(priority, churn_risk, status, notes):
+    if status == "Converted":
+        return "Nurture for upsell"
+    if status == "Lost":
+        return "Re-engage in 30 days"
+    
+    if priority and "1" in priority:
+        if status == "New":
+            return "Call immediately"
+        if status == "Contacted":
+            return "Schedule a demo"
+        if notes and "Email Bounced" in notes:
+            return "Call — email not working"
+        if notes and "Email Opened" in notes:
+            return "Send follow-up email now"
+    
+    if priority and "2" in priority:
+        if churn_risk == "High":
+            return "Send re-engagement email"
+        if notes and "Page Visited on Website" in notes:
+            return "Call while interest is hot"
+        return "Send introduction email"
+    
+    if priority and "3" in priority:
+        if churn_risk == "High":
+            return "At risk — follow up today"
+        return "Follow up in 3 days"
+    
+    if priority and "4" in priority:
+        return "Monitor — low priority"
+    
+    if priority and "5" in priority:
+        return "No action needed"
+    
+    return " Review lead details"
 
 # --- Login Page ---
 @app.route("/login", methods=["GET", "POST"])
@@ -325,6 +361,34 @@ def run_priority_scoring_route():
         from priority_score import run_priority_scoring
         run_priority_scoring()
         return jsonify({"message": "Priority scoring complete!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+# --- Run Next Best Action ---
+@app.route("/run-next-action", methods=["POST"])
+def run_next_action():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, priority, churn_risk, status, notes FROM leads")
+        leads = cursor.fetchall()
+
+        for lead in leads:
+            action = get_next_action(
+                lead.get("priority"),
+                lead.get("churn_risk"),
+                lead.get("status"),
+                lead.get("notes")
+            )
+            cursor.execute(
+                "UPDATE leads SET next_action = %s WHERE id = %s",
+                (action, lead["id"])
+            )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"message": f"Next Best Action updated for {len(leads)} leads!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
