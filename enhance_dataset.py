@@ -95,11 +95,28 @@ size_probs = size_probs / size_probs.sum(axis=1, keepdims=True)
 df['company_size'] = [np.random.choice(sizes, p=size_probs[i]) for i in range(n)]
 
 # ── 5. annual_budget ──────────────────────────────────────────────────────────
-budgets = ['Low', 'Medium', 'High']
-# Correlated with company size and profile score
-size_budget = {'Small': [0.60, 0.30, 0.10], 'Medium': [0.30, 0.45, 0.25],
-               'Large': [0.15, 0.40, 0.45], 'Enterprise': [0.05, 0.25, 0.70]}
-df['annual_budget'] = [np.random.choice(budgets, p=size_budget[s]) for s in df['company_size']]
+budget_rows = []
+for i, row in df.iterrows():
+    converted = row['Converted']
+    size = row['company_size']
+    if converted == 1:
+        # Converted leads → more likely High budget
+        size_budget = {
+            'Small':      [0.30, 0.40, 0.30],
+            'Medium':     [0.15, 0.35, 0.50],
+            'Large':      [0.05, 0.25, 0.70],
+            'Enterprise': [0.02, 0.13, 0.85]
+        }
+    else:
+        # Non-converted leads → more likely Low/Medium budget
+        size_budget = {
+            'Small':      [0.65, 0.25, 0.10],
+            'Medium':     [0.45, 0.40, 0.15],
+            'Large':      [0.30, 0.45, 0.25],
+            'Enterprise': [0.15, 0.45, 0.40]
+        }
+    budget_rows.append(np.random.choice(['Low', 'Medium', 'High'], p=size_budget[size]))
+df['annual_budget'] = budget_rows
 
 # ── 6. decision_maker ─────────────────────────────────────────────────────────
 # Directors and Executives are more likely to be decision makers
@@ -109,6 +126,7 @@ df['decision_maker'] = [
     'Yes' if np.random.random() < dm_prob[r] else 'No'
     for r in df['job_role']
 ]
+
 
 # ── 7. last_contacted_days ────────────────────────────────────────────────────
 # Higher activity = contacted more recently

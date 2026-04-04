@@ -46,13 +46,18 @@ async function addLead() {
 // --- View Leads ---
 async function viewLeads() {
     try {
+        // All 9240 leads for charts and stats
+        const statsResponse = await fetch(`${API}/dashboard-stats`);
+        const statsData = await statsResponse.json();
+        renderStats(statsData.leads);
+        renderCharts(statsData.leads);
+
+        // Only 1000 for table
         const response = await fetch(`${API}/view-leads`);
         const data = await response.json();
-        renderStats(data.leads);
-        renderCharts(data.leads);
         renderTable(data.leads);
 
-        // Run next action in background after leads load
+        // Run next action in background
         fetch(`${API}/run-next-action`, { method: "POST" })
             .then(() => fetch(`${API}/view-leads`))
             .then(res => res.json())
@@ -78,6 +83,8 @@ let categoryChartInstance = null;
 let churnChartInstance = null;
 let priorityChartInstance = null;
 let featureChartInstance = null;
+let industryChartInstance = null;
+let companySizeChartInstance = null;
 
 // --- Render Charts ---
 async function renderCharts(leads) { 
@@ -183,7 +190,59 @@ async function renderCharts(leads) {
         }
     });
 
-    // ── 5. Feature Importance Chart ───────────────────────────────
+    // ── 5. Industry Distribution ──────────────────────────────────
+    const industryCounts = {
+        "Technology": leads.filter(l => l.industry === "Technology").length,
+        "Finance": leads.filter(l => l.industry === "Finance").length,
+        "Healthcare": leads.filter(l => l.industry === "Healthcare").length,
+        "Retail": leads.filter(l => l.industry === "Retail").length,
+        "Education": leads.filter(l => l.industry === "Education").length,
+        "Manufacturing": leads.filter(l => l.industry === "Manufacturing").length
+    };
+
+    if (industryChartInstance) industryChartInstance.destroy();
+    industryChartInstance = new Chart(document.getElementById("industryChart"), {
+        type: "bar",
+        data: {
+            labels: Object.keys(industryCounts),
+            datasets: [{
+                label: "Leads",
+                data: Object.values(industryCounts),
+                backgroundColor: ["#6366F1", "#E91E8C", "#10B981", "#F59E0B", "#3B82F6", "#EF4444"]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // ── 6. Company Size Distribution ──────────────────────────────
+    const companySizeCounts = {
+        "Small": leads.filter(l => l.company_size === "Small").length,
+        "Medium": leads.filter(l => l.company_size === "Medium").length,
+        "Large": leads.filter(l => l.company_size === "Large").length,
+        "Enterprise": leads.filter(l => l.company_size === "Enterprise").length
+    };
+
+    if (companySizeChartInstance) companySizeChartInstance.destroy();
+    companySizeChartInstance = new Chart(document.getElementById("companySizeChart"), {
+        type: "pie",
+        data: {
+            labels: Object.keys(companySizeCounts),
+            datasets: [{
+                data: Object.values(companySizeCounts),
+                backgroundColor: ["#E91E8C", "#6366F1", "#10B981", "#F59E0B"]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: "bottom" } }
+        }
+    });
+
+    // ── 7. Feature Importance Chart ───────────────────────────────
     const fiResponse = await fetch(`${API}/feature-importance`);
     const fiData = await fiResponse.json();
 
@@ -211,7 +270,7 @@ async function renderCharts(leads) {
 function renderTable(leads) {
     const tbody = document.getElementById("leadsBody");
     tbody.innerHTML = "";
-    document.getElementById("filteredCount").textContent = `Showing ${leads.length} lead${leads.length !== 1 ? 's' : ''}`;
+    document.getElementById("filteredCount").textContent = `Showing ${leads.length} of 9240 leads`;
 
     leads.forEach(lead => {
         const row = document.createElement("tr");

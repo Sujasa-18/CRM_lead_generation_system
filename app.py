@@ -54,14 +54,17 @@ def log_activity(lead_id, action):
     except Exception as e:
         print(f"Activity log error: {e}")
 
+
 # --- Next Best Action Logic ---
-def get_next_action(priority, churn_risk, status, notes):
+def get_next_action(priority, churn_risk, status, notes, decision_maker=None, product_demo_taken=None, job_role=None):
     if status == "Converted":
         return "Nurture for upsell"
     if status == "Lost":
         return "Re-engage in 30 days"
-    
+
     if priority and "1" in priority:
+        if decision_maker == "Yes":
+            return "Schedule executive call immediately"
         if status == "New":
             return "Call immediately"
         if status == "Contacted":
@@ -70,26 +73,32 @@ def get_next_action(priority, churn_risk, status, notes):
             return "Call — email not working"
         if notes and "Email Opened" in notes:
             return "Send follow-up email now"
-    
+
     if priority and "2" in priority:
+        if product_demo_taken == "Yes":
+            return "Send proposal — demo already taken"
+        if decision_maker == "Yes":
+            return "Schedule decision maker call"
         if churn_risk == "High":
             return "Send re-engagement email"
         if notes and "Page Visited on Website" in notes:
             return "Call while interest is hot"
         return "Send introduction email"
-    
+
     if priority and "3" in priority:
+        if product_demo_taken == "No" and job_role in ["Director", "Executive", "Manager"]:
+            return "Offer product demo"
         if churn_risk == "High":
             return "At risk — follow up today"
         return "Follow up in 3 days"
-    
+
     if priority and "4" in priority:
         return "Monitor — low priority"
-    
+
     if priority and "5" in priority:
         return "No action needed"
-    
-    return " Review lead details"
+
+    return "Review lead details"
 
 # --- Login Page ---
 @app.route("/login", methods=["GET", "POST"])
@@ -251,7 +260,19 @@ def view_leads():
 
     except Exception as e:
         return jsonify({"message": f"Error: {str(e)}"}), 500
-
+# --- Dashboard Stats (all leads) ---
+@app.route("/dashboard-stats", methods=["GET"])
+def dashboard_stats():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT status, lead_category, churn_risk, priority, industry, company_size FROM leads")
+        leads = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({"leads": leads}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # --- Delete Lead ---
 @app.route("/delete-lead/<int:lead_id>", methods=["DELETE"])
@@ -378,7 +399,10 @@ def run_next_action():
                 lead.get("priority"),
                 lead.get("churn_risk"),
                 lead.get("status"),
-                lead.get("notes")
+                lead.get("notes"),
+                lead.get("decision_maker"),
+                lead.get("product_demo_taken"),
+                lead.get("job_role")
             )
             cursor.execute(
                 "UPDATE leads SET next_action = %s WHERE id = %s",
@@ -392,6 +416,7 @@ def run_next_action():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 # --- Feature Importance ---
 @app.route("/feature-importance", methods=["GET"])
 def feature_importance():
@@ -399,10 +424,15 @@ def feature_importance():
         import joblib
         model = joblib.load("lead_scoring_model.pkl")
         features = [
-            "TotalVisits", "Time Spent", "Page Views",
+            "Total Visits", "Time Spent on Website", "Page Views Per Visit",
             "Activity Score", "Profile Score",
             "Do Not Email", "Do Not Call", "Search", "Magazine",
-            "Newspaper", "Digital Ad", "Recommendations"
+            "Digital Advertisement", "Through Recommendations",
+            "Job Role", "Years of Experience", "Industry",
+            "Company Size", "Annual Budget", "Decision Maker",
+            "Last Contacted Days", "No. of Follow Ups", "Product Demo Taken",
+            "Response Time (hrs)", "Previous Purchase", "Location",
+            "Age Group", "Lead Source Quality", "Engagement Trend"
         ]
         importance = model.feature_importances_.tolist()
         return jsonify({"features": features, "importance": importance}), 200
