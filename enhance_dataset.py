@@ -211,15 +211,13 @@ src_probs = src_probs / src_probs.sum(axis=1, keepdims=True)
 df['lead_source_quality'] = [np.random.choice(sources, p=src_probs[i]) for i in range(n)]
 
 # ── 15. engagement_trend ──────────────────────────────────────────────────────
-trends = ['Increasing', 'Stable', 'Decreasing']
-# Higher time spent + visits = increasing trend
 trend_probs = np.column_stack([
-    np.clip(0.20 + time_n * 0.40 + vis_n * 0.20, 0.05, 0.75),  # Increasing
-    np.clip(0.40 - time_n * 0.10, 0.15, 0.55),                  # Stable
-    np.clip(0.40 - time_n * 0.30 - vis_n * 0.20, 0.05, 0.55),  # Decreasing
+    np.clip(0.20 + time_n * 0.40 + vis_n * 0.20, 0.05, 0.75),
+    np.clip(0.40 - time_n * 0.10, 0.15, 0.55),
+    np.clip(0.40 - time_n * 0.30 - vis_n * 0.20, 0.05, 0.55),
 ])
 trend_probs = trend_probs / trend_probs.sum(axis=1, keepdims=True)
-df['engagement_trend'] = [np.random.choice(trends, p=trend_probs[i]) for i in range(n)]
+df['engagement_trend'] = [np.random.choice(['Increasing', 'Stable', 'Decreasing'], p=trend_probs[i]) for i in range(n)]
 
 # ── Save ──────────────────────────────────────────────────────────────────────
 df.to_csv("Lead_Scoring_Enhanced.csv", index=False)

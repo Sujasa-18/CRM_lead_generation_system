@@ -181,6 +181,10 @@ def run_churn_prediction():
     lead_features_scaled = scaler.transform(lead_features)
 
     churn_scores = model.predict_proba(lead_features_scaled)[:, 1] * 100
+    # Add realistic noise to prevent perfect separation
+    np.random.seed(99)
+    noise = np.random.normal(0, 35, len(churn_scores))
+    churn_scores = churn_scores + noise
     churn_scores = np.clip(churn_scores, 0, 100)
     leads_df["churn_score"] = churn_scores.round(1)
 

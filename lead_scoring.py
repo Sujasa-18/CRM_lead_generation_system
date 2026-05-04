@@ -94,8 +94,13 @@ def run_lead_scoring():
 
     # ── Train ML Model ─────────────────────────────────────────────
     model = GradientBoostingClassifier(
-        n_estimators=200, learning_rate=0.05,
-        max_depth=5, random_state=42
+    n_estimators=100,
+    learning_rate=0.05,
+    max_depth=3,
+    min_samples_split=10,
+    min_samples_leaf=5,
+    subsample=0.8,
+    random_state=42
     )
     model.fit(X_train_scaled, y_train)
 
@@ -176,7 +181,11 @@ def run_lead_scoring():
     lead_features        = leads_df[features]
     lead_features_scaled = scaler.transform(lead_features)
 
-    scores = model.predict_proba(lead_features_scaled)[:, 1] * 100
+    raw_scores = model.predict_proba(lead_features_scaled)[:, 1]
+# Min-max normalization to use full 0-100 range
+    min_score = raw_scores.min()
+    max_score = raw_scores.max()
+    scores = ((raw_scores - min_score) / (max_score - min_score)) * 100
     scores = np.clip(scores, 0, 100)
     leads_df["lead_score"] = scores.round(1)
 

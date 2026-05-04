@@ -17,60 +17,63 @@ def run_priority_scoring():
 
     # ── Priority Logic ─────────────────────────────────────────────
     def calculate_priority(row):
-        lead_score    = row.get("lead_score") or 0
-        churn_risk    = row.get("churn_risk") or "Low"
+        lead_score     = row.get("lead_score") or 0
+        churn_risk     = row.get("churn_risk") or "Low"
         decision_maker = row.get("decision_maker") or "No"
         annual_budget  = row.get("annual_budget") or "Low"
         company_size   = row.get("company_size") or "Small"
 
-        # Boost score based on new features
-        boost = 0
-
-       # Decision maker boost
-        if decision_maker == "Yes":
-            boost += 20
-
-        # Budget boost
-        if annual_budget == "High":
-            boost += 15
-        elif annual_budget == "Medium":
-            boost += 8
-
-        # Company size boost
-        if company_size == "Enterprise":
-            boost += 12
-        elif company_size == "Large":
-            boost += 8
-        elif company_size == "Medium":
-            boost += 4
-
-        # Effective score with boost
-        effective_score = min(lead_score + boost, 100)
-
-        # Priority rules using effective score
-        if effective_score >= 70 and churn_risk == "High":
-            return "Priority 1 - Urgent"
-
-        elif effective_score >= 70 and churn_risk == "Medium":
-            return "Priority 2 - Follow Up"
-
-        elif effective_score >= 70 and churn_risk == "Low":
-            return "Priority 3 - Nurture"
-
-        elif effective_score >= 40 and churn_risk == "High":
-            return "Priority 2 - Follow Up"
-
-        elif effective_score >= 40 and churn_risk == "Medium":
-            return "Priority 3 - Nurture"
-
-        elif effective_score >= 40 and churn_risk == "Low":
-            return "Priority 4 - Monitor"
-
-        elif effective_score < 40 and churn_risk == "High":
-            return "Priority 4 - Monitor"
-
+        # Determine base category from lead score
+        if lead_score >= 70:
+            category = "Hot"
+        elif lead_score >= 40:
+            category = "Warm"
         else:
-            return "Priority 5 - No Action"
+            category = "Cold"
+
+        # Boost points (only affects within-category ranking)
+        boost = 0
+        if decision_maker == "Yes":
+            boost += 2
+        if annual_budget == "High":
+            boost += 2
+        elif annual_budget == "Medium":
+            boost += 1
+        if company_size == "Enterprise":
+            boost += 2
+        elif company_size == "Large":
+            boost += 1
+
+        # ── Hot leads (score >= 70) ────────────────────────────────
+        if category == "Hot":
+            if churn_risk == "High":
+                return "Priority 1 - Urgent"
+            elif churn_risk == "Medium":
+                if boost >= 3:
+                    return "Priority 1 - Urgent"
+                return "Priority 2 - Follow Up"
+            else:
+                if boost >= 4:
+                    return "Priority 2 - Follow Up"
+                return "Priority 3 - Nurture"
+
+        # ── Warm leads (score 40-69) ───────────────────────────────
+        elif category == "Warm":
+            if churn_risk == "High":
+                if boost >= 4:
+                    return "Priority 2 - Follow Up"
+                return "Priority 3 - Nurture"
+            elif churn_risk == "Medium":
+                return "Priority 3 - Nurture"
+            else:
+                return "Priority 4 - Monitor"
+
+        # ── Cold leads (score < 40) ────────────────────────────────
+        else:
+            if churn_risk == "High":
+                return "Priority 4 - Monitor"
+            else:
+                return "Priority 5 - No Action"
 
     leads_df["priority"] = leads_df.apply(calculate_priority, axis=1)
 
@@ -87,8 +90,10 @@ def run_priority_scoring():
     conn.close()
 
     print("\n✅ Priority scores saved to database!")
-    print(leads_df[["name", "lead_score", "churn_risk", "decision_maker",
-                     "annual_budget", "company_size", "priority"]].head(10))
+    print(leads_df[["name", "lead_score", "lead_category",
+                     "churn_risk", "decision_maker", "priority"]].head(10))
+    print("\nPriority Distribution:")
+    print(leads_df["priority"].value_counts())
 
 
 if __name__ == "__main__":
