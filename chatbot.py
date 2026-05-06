@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configure Groq
-client = Groq(api_key=os.getenv("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"))
+client = Groq(api_key=os.getenv())
 MODEL = "llama-3.3-70b-versatile"
 
 def get_db_connection():
