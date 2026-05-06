@@ -532,6 +532,21 @@ def export_csv():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    # --- Chatbot ---
+@app.route("/chatbot", methods=["POST"])
+@login_required
+def chatbot():
+    try:
+        from chatbot import chat
+        data = request.get_json()
+        user_message = data.get("message", "")
+        if not user_message:
+            return jsonify({"error": "No message provided"}), 400
+        result = chat(user_message)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

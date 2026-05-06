@@ -537,5 +537,63 @@ function closeActivityModal() {
     document.getElementById("activityOverlay").classList.remove("active");
 }
 
+// --- Chatbot ---
+function toggleChat() {
+    const body = document.getElementById("chatBody");
+    const icon = document.getElementById("chatToggleIcon");
+    if (body.style.display === "none") {
+        body.style.display = "flex";
+        icon.textContent = "▲";
+    } else {
+        body.style.display = "none";
+        icon.textContent = "▼";
+    }
+}
+
+function handleChatKeyPress(event) {
+    if (event.key === "Enter") {
+        sendChatMessage();
+    }
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById("chatInput");
+    const messages = document.getElementById("chatMessages");
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    // Add user message
+    messages.innerHTML += `<div class="chat-message user-message">${message}</div>`;
+    input.value = "";
+
+    // Add typing indicator
+    messages.innerHTML += `<div class="chat-typing" id="typingIndicator">Assistant is thinking...</div>`;
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+        const response = await fetch(`${API}/chatbot`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        // Remove typing indicator
+        const typing = document.getElementById("typingIndicator");
+        if (typing) typing.remove();
+
+        // Add bot response
+        messages.innerHTML += `<div class="chat-message bot-message">${data.answer}</div>`;
+        messages.scrollTop = messages.scrollHeight;
+
+    } catch (err) {
+        const typing = document.getElementById("typingIndicator");
+        if (typing) typing.remove();
+        messages.innerHTML += `<div class="chat-message bot-message">Sorry, something went wrong. Please try again.</div>`;
+        messages.scrollTop = messages.scrollHeight;
+    }
+}
 // --- Initialize page ---
 viewLeads();

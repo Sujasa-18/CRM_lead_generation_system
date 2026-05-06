@@ -202,5 +202,24 @@
         document.getElementById('saveBtn').addEventListener('click', saveLead);
     </script>
 
+    <!-- Chatbot Widget -->
+<div class="chat-widget" id="chatWidget">
+    <div class="chat-header" onclick="toggleChat()">
+        🤖 CRM Assistant
+        <span id="chatToggleIcon">▲</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-message bot-message">
+                Hi! I'm your CRM Assistant. Ask me anything about your leads!
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Ask a question..." onkeypress="handleChatKeyPress(event)" />
+            <button onclick="sendChatMessage()" class="chat-send-btn">Send</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
